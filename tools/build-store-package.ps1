@@ -22,7 +22,7 @@ $rootFiles = @(
   "inject.js",
   "inject.css",
   "shadow.css",
-  "support.jpg",
+  "请我喝瓶水~.jpg",
   "LICENSE",
   "THIRD_PARTY_NOTICES.md"
 )

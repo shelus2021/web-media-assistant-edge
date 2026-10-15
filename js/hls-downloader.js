@@ -7,7 +7,7 @@
     const jobStates = new Map();
     const pendingDownloads = new Map();
     let activeOperations = 0;
-    const popupPanels = new Set(["mainMenu", "playbackPanel", "shortcutsPanel", "generalPanel", "capturePanel", "imagePreviewPanel", "imagePreviewSettingsPanel", "imagePreviewShortcutsPanel", "donationPanel"]);
+    const popupPanels = new Set(["mainMenu", "playbackPanel", "shortcutsPanel", "generalPanel", "capturePanel", "imagePreviewPanel", "imagePreviewSettingsPanel", "imagePreviewShortcutsPanel"]);
     let popupPanel = "mainMenu";
     let nextJobId = 1;
     let mp4boxLoader;
