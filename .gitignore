@@ -1,0 +1,12 @@
+*.xpi
+*.zip
+*.crx
+*.pem
+*.log
+*.bak
+*~
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
