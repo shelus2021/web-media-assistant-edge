@@ -16,8 +16,8 @@ G.OptionLists = {
 };
 G.initSyncComplete = false;
 
-// Init
-InitOptions();
+// Init. Message handlers can await this promise after an MV3 worker wake-up.
+var extensionStateReady = InitOptions();
 
 // 正则预编译
 const reFilename = /filename="?([^"]+)"?/;
@@ -30,21 +30,24 @@ let debounceCount = 0;
 
 // 初始变量
 function InitOptions() {
-    // 断开重新连接后 立刻把local里MediaData数据交给cacheData
-    chrome.storage.local.get({ MediaData: {} }, function (items) {
-        if (items.MediaData.init) {
-            cacheData = {};
-            return;
-        }
-        cacheData = items.MediaData;
+    const localReady = new Promise(resolve => {
+        // 断开重新连接后 立刻把local里MediaData数据交给cacheData
+        chrome.storage.local.get({ MediaData: {} }, function (items) {
+            cacheData = items.MediaData && !items.MediaData.init ? items.MediaData : {};
+            resolve();
+        });
     });
-    // 读取sync配置数据 交给全局变量G
-    chrome.storage.sync.get(G.OptionLists, function (items) {
-        // Ext的Array转为Map类型
-        items.Ext = new Map(items.Ext.map(item => [item.ext, item]));
-        G = { ...items, ...G };
-        G.initSyncComplete = true;
+    const syncReady = new Promise(resolve => {
+        // 读取sync配置数据 交给全局变量G
+        chrome.storage.sync.get(G.OptionLists, function (items) {
+            // Ext的Array转为Map类型
+            items.Ext = new Map(items.Ext.map(item => [item.ext, item]));
+            G = { ...items, ...G };
+            G.initSyncComplete = true;
+            resolve();
+        });
     });
+    return Promise.all([localReady, syncReady]);
 }
 
 // Private-window media stays in memory and is never written to storage.local.
@@ -76,7 +79,7 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
 chrome.runtime.onInstalled.addListener(function (details) {
     if (details.reason == "update") {
         chrome.storage.local.remove(["MediaData"], function () {
-            InitOptions();
+            extensionStateReady = InitOptions();
         });
     }
 });

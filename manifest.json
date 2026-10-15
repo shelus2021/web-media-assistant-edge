@@ -1,7 +1,7 @@
 {
   "name": "__MSG_extensionName__",
   "short_name": "__MSG_extensionShortName__",
-  "version": "0.1.38",
+  "version": "0.1.39",
   "manifest_version": 3,
   "minimum_chrome_version": "109",
   "description": "__MSG_extensionDescription__",
@@ -48,7 +48,7 @@
       "matches": ["<all_urls>"],
       "match_about_blank": true,
       "run_at": "document_end",
-      "js": ["imagus/includes/rule-functions.js", "imagus/includes/content.js"]
+      "js": ["lib/eval5.min.js", "imagus/includes/rule-runtime.js", "imagus/includes/rule-functions.js", "imagus/includes/content.js"]
     }
   ],
   "web_accessible_resources": [

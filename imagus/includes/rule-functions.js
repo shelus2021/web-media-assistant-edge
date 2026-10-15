@@ -12,6 +12,8 @@ return n&&typeof n!='number'||n===null? (Array.isArray(n) ? n.join('\n') : n) : 
 }
   }),
   "GoogleImages": Object.freeze({
+    "url": function(){var $ = arguments; return  $[1] ? '' : $[0]
+},
     "res": function($){
 var i=!$[1]&&$._.match(RegExp(',"'+$[2]+'",[^\\]]+[^\\[]+\\[("[^"]+")[^\}]+",("([^"\\\\]*(?:\\\\.[^"\\\\]*)*)")')),d=decodeURIComponent
 $ = $[1] && d(d($[1])) || i && JSON.parse(i[1])
@@ -39,6 +41,8 @@ var m = document.evaluate('./ancestor-or-self::a[contains(@m, "imgurl") or conta
 m = m && JSON.parse(m);
 m = m && (m.imgurl||m.murl)
 return (m ? m + '\n' : '') + $[1]
+},
+    "url": function(){var $ = arguments; return  $[0].indexOf('mediaurl=h')>0 ? '' : $[1] + 'view=detailV2&id=' + $[2]
 },
     "res": function($){
 var m = $[0].match(/mediaurl=(http[^&]+)/);
@@ -85,6 +89,8 @@ p=p.pathname||(p=p.parentNode)&&p.pathname||(p=p.parentNode)&&p.pathname
 p=p&&p.match(/^\/([\w.-]+)\/?$/)
 return 'https://facebook.com/' + (p?p[1].replace(/^\w+-(\d{8,})$/, '$1')+'/photos/' : 'photo.php?fbid=') + $[1]
 },
+    "url": function(){var $ = arguments; return  (this.node.dataset||{}).ploi || (((this.node.parentNode || {}).dataset) || {}).ploi ? '' : 'https://www.facebook.com/' + ($[1] ? $[1] + $[2] : 'photo.php?fbid=' + $[2])
+},
     "res": function($){
 if($._===void 0)return this.node.dataset.ploi||this.node.parentNode.dataset.ploi
 var u=$._.match(RegExp('='+($[2]||$[1])+'(?:[^">]+"\\s+)+?data-ploi="([^"]+)')) || $._.match(RegExp(',"image":{"uri":"(https:[^"]+)')) || $._.match(/="og:image" content="([^"]+)/)
@@ -101,6 +107,8 @@ else if ((x=x.getAttribute('onclick')||p.getAttribute('onclick')) && x.indexOf('
  $=(x.w ? '#' + x.w + '\n' : '') + (x.z || x.y || x.x);
 }
 return $
+},
+    "url": function(){var $ = arguments; return  $[1]=='doc' ? $[0] : 'vk.com/al_photos.php :list=' + ($[4] ? $[3]+$[4]:((this.node.parentNode.getAttribute('onclick')+'').match(/wall-[\d_]+/)||'')+'')+'&act=show&al=1&photo='+$[2]
 },
     "res": function($){
 if($[1]=='doc') { var x=$._.match(/<img src="([^"?]+)/);return x&&x[1] }
@@ -122,6 +130,8 @@ return img
 }
   }),
   "deviantArt": Object.freeze({
+    "url": function(){var $ = arguments; return  $[1] ? 'http://fav.me/' + $[1] : $[0]
+},
     "res": function($){
 var m=$._.match(/\.__INITIAL_STATE__\s*=\s*JSON\.parse\(("[^\n]+")/)
 if(!m) {
@@ -148,6 +158,8 @@ return $[4][0]=='g' ? l + '.#mp4 gif#' : ('#' + l + ($[4] ? x : '.jpg') + ($[2][
 }
   }),
   "imgur-set": Object.freeze({
+    "url": function(){var $ = arguments; return  $[1] ? 'https://imgur.com/' + ($[1] == 'a' ? 'a/' + $[2] + '/embed' : $[1] + '/' + $[2] + '/hit.json') : $[0]
+},
     "res": function($){
 var ret = [], im, g, c, x, i, t, u, l = '//i.imgur.com/', p404='404 page</title>';
 
@@ -229,6 +241,8 @@ var v = $[1]&&$[1].replace(/(video)_thumb(\/[^.]+).+/, '$1$2.mp4'), f = $[0].mat
 if($[1] && v.length!=$[1].length) return v
 return !$[3]||$[3]=='card_img' ? '#//' + ($[1] || $[2]) + p + 'orig\n' + '//' + $[1] + p + 'large' : $[2] + $[4]
 },
+    "url": function(){var $ = arguments; return  'https://' + (!$[0].lastIndexOf('pic',0) ? $[0] : 'twitter.com/i/' + ($[2]=='photo' ? 'tweet/html?id=' : 'cards/tfw/v1/') + $[1])
+},
     "res": function($){
 var x
 if (x = $._.slice && $._.slice(40,200).match(/="0;URL=([^"]+)/)) return{loop: x[1]};
@@ -298,6 +312,10 @@ return $._.map(function(x,i) {
     "res": function($){
 var x = $._.match(RegExp("src='/[\\da-zA-Z]+(_[^.]*)?\\.[^']+", 'g')), t = $._.match(/<h2[^>]*>([^<]+)/), l = 'http://' + $[1];
 return x ? x.map(function(i, n) {return ['#' + l + i.replace(/_[^.]+/, ''), !n && t && t[1]]}) : x
+}
+  }),
+  "plays.tv": Object.freeze({
+    "url": function(){var $ = arguments; return  '//' + $[1] + ($[2][0]=='e'?'video':$[2]) + $[3]
 }
   }),
   "[vi].redd.it": Object.freeze({
@@ -372,6 +390,8 @@ return m ? [m[1], (t = $._.match(RegExp(r[0]+'title'+r[1])))&&t[1]] : !1
 }
   }),
   "gfycat": Object.freeze({
+    "url": function(){var $ = arguments; return  'https://api.'+$[1]+'/v1/' + ($[3] ? 'users/'+$[3]+'/album_links/'+$[4] : 'gfycats/'+$[2])
+},
     "res": function($){
 var u,g,i=0,r=[], o=JSON.parse($._);
 o=o.publishedGfys||[o.gfyItem]

@@ -8,6 +8,7 @@
 | hls.js | hls.js | Apache-2.0 · `lib/hls.LICENSE.txt` |
 | mux.js | mux.js | Apache-2.0 · `lib/mux.LICENSE.txt` |
 | MP4Box.js | GPAC | BSD-3-Clause · `lib/mp4box.LICENSE.txt` |
+| eval5 1.4.8 | bplok20010/eval5 | MIT · `licenses/eval5-MIT.txt` |
 
 Imagus-derived runtime files and `imagus/sieve.jsn` remain under their original terms. The project MIT license does not cover them.
 

@@ -179,15 +179,23 @@ function findMedia(data, retryCount = 0) {
 // 仅接收弹窗发出的当前标签清理请求。
 chrome.runtime.onMessage.addListener(function (Message, _sender, sendResponse) {
     if (Message.Message == "getMediaData") {
-        sendResponse({ ok: true, items: cacheData[Message.tabId] || [] });
-        return false;
+        extensionStateReady.then(function () {
+            sendResponse({ ok: true, items: cacheData[Message.tabId] || [] });
+        }).catch(function (error) {
+            sendResponse({ ok: false, error: error.message || String(error), items: [] });
+        });
+        return true;
     }
     if (Message.Message == "clearData" && Message.type) {
-        delete cacheData[Message.tabId];
-        persistMediaData();
-        SetIcon({ tabId: Message.tabId });
-        clearRedundant();
-        sendResponse("OK");
+        extensionStateReady.then(function () {
+            delete cacheData[Message.tabId];
+            persistMediaData();
+            SetIcon({ tabId: Message.tabId });
+            clearRedundant();
+            sendResponse("OK");
+        }).catch(function (error) {
+            sendResponse({ ok: false, error: error.message || String(error) });
+        });
         return true;
     }
     return false;

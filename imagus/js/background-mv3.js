@@ -54,15 +54,15 @@ function imagusCacheSieve(source) {
     try {
       if (rule.off) continue;
       rule._wmaRuleName = ruleName;
-      for (const field of ["to", "url", "res"]) {
-        if (typeof rule[field] !== "string" || !rule[field].startsWith(":\n")) continue;
-        if (!imagusBundledFunctionSources[ruleName] || imagusBundledFunctionSources[ruleName][field] !== rule[field]) {
-          throw new Error("custom executable rule code is disabled in the MV3 build");
-        }
-      }
       if (rule.res) {
         if (/^:\n/.test(rule.res)) {
-          imagusResolvers[cached.length] = { type: "function", name: ruleName };
+          const bundledSource = imagusBundledFunctionSources[ruleName] && imagusBundledFunctionSources[ruleName].res;
+          if (bundledSource === rule.res) {
+            imagusResolvers[cached.length] = { type: "function", name: ruleName };
+          } else {
+            imagusResolvers[cached.length] = { type: "interpreted", source: rule.res };
+            rule._wmaCustomRes = rule.res;
+          }
           rule.res = 1;
         } else {
           const lines = rule.res.split(/\n+/);

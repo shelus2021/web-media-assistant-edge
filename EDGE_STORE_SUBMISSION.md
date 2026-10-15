@@ -2,9 +2,9 @@
 
 ## 上传文件
 
-上传项目根目录中的 `WebMediaAssistant-edge-store-0.1.38.zip`。不要上传 CRX、PEM、源码目录或 `tools` 目录。
+上传项目根目录中的 `WebMediaAssistant-edge-store-0.1.39.zip`。不要上传 CRX、PEM、源码目录或 `tools` 目录。
 
-包内清单版本为 Manifest V3，扩展版本为 0.1.38。`manifest.json` 位于 ZIP 根目录。
+包内清单版本为 Manifest V3，扩展版本为 0.1.39。`manifest.json` 位于 ZIP 根目录。
 
 ## 商店描述（中文）
 

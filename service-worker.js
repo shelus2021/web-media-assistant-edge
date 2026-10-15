@@ -15,6 +15,8 @@ const HLS_COMMANDS = new Set([
   "setHlsPopupPanel",
   "cancelHlsDownload"
 ]);
+const OFFSCREEN_CLOSE_ALARM = "wma-close-hls-offscreen";
+const OFFSCREEN_IDLE_MINUTES = 1;
 
 let creatingOffscreenDocument;
 
@@ -42,6 +44,26 @@ async function ensureOffscreenDocument() {
     }).finally(() => { creatingOffscreenDocument = null; });
   }
   await creatingOffscreenDocument;
+}
+
+function cancelOffscreenClose() {
+  chrome.alarms.clear(OFFSCREEN_CLOSE_ALARM, () => void chrome.runtime.lastError);
+}
+
+function scheduleOffscreenClose() {
+  chrome.alarms.create(OFFSCREEN_CLOSE_ALARM, { delayInMinutes: OFFSCREEN_IDLE_MINUTES });
+}
+
+async function closeOffscreenIfIdle() {
+  if (!await hasOffscreenDocument()) return;
+  let state;
+  try {
+    state = await sendToOffscreen({ __wmaInternal: "getRuntimeState" });
+  } catch (_) {
+    return;
+  }
+  if (!state || state.jobs || state.pendingDownloads || state.activeOperations) return;
+  await chrome.offscreen.closeDocument();
 }
 
 function sendToOffscreen(message) {
@@ -84,11 +106,23 @@ async function addRefererRule(url, referer) {
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!message || message.__wmaTarget) return false;
 
+  if (message.Message === "hlsDownloadProgress") {
+    if (["complete", "error", "cancelled"].includes(message.state)) scheduleOffscreenClose();
+    return false;
+  }
+
   if (HLS_COMMANDS.has(message.Message)) {
+    cancelOffscreenClose();
     ensureOffscreenDocument()
       .then(() => sendToOffscreen(message))
-      .then(sendResponse)
-      .catch(error => sendResponse({ ok: false, error: error.message }));
+      .then(response => {
+        sendResponse(response);
+        if (message.Message !== "startHlsDownload" || !response || response.ok !== true) scheduleOffscreenClose();
+      })
+      .catch(error => {
+        scheduleOffscreenClose();
+        sendResponse({ ok: false, error: error.message });
+      });
     return true;
   }
 
@@ -121,11 +155,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 chrome.downloads.onChanged.addListener(delta => {
   if (!delta.state && !delta.error) return;
-  ensureOffscreenDocument()
-    .then(() => chrome.runtime.sendMessage({
+  // Do not create an offscreen page for unrelated browser downloads.
+  hasOffscreenDocument()
+    .then(exists => exists ? chrome.runtime.sendMessage({
       __wmaTarget: "hls-offscreen",
       __wmaInternal: "downloadChanged",
       delta
-    }, () => void chrome.runtime.lastError))
+    }) : null)
+    .then(response => {
+      if (response && response.handled) scheduleOffscreenClose();
+    })
     .catch(() => {});
+});
+
+chrome.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === OFFSCREEN_CLOSE_ALARM) closeOffscreenIfIdle().catch(() => {});
 });

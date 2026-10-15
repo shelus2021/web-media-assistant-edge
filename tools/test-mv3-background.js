@@ -7,11 +7,11 @@ const vm = require("vm");
 
 const root = path.resolve(__dirname, "..");
 const listeners = {};
-const local = {};
+const local = { MediaData: { 1: [{ url: "https://example.com/persisted.mp4" }] } };
 const sync = {};
 const event = name => ({ addListener(listener) { (listeners[name] ||= []).push(listener); } });
 
-function storageArea(data) {
+function storageArea(data, callbackDelay = 0) {
   return {
     get(keys, callback) {
       let result = {};
@@ -21,7 +21,10 @@ function storageArea(data) {
         result = { ...keys };
         Object.keys(keys).forEach(key => { if (data[key] !== undefined) result[key] = data[key]; });
       } else result = { ...data };
-      if (callback) callback(result);
+      if (callback) {
+        if (callbackDelay) setTimeout(() => callback(result), callbackDelay);
+        else callback(result);
+      }
       return Promise.resolve(result);
     },
     set(items, callback) { Object.assign(data, items); if (callback) callback(); return Promise.resolve(); },
@@ -36,14 +39,14 @@ const chrome = {
   i18n: { getMessage(key) { return key; }, getUILanguage() { return "en"; } },
   runtime: {
     lastError: null,
-    getManifest() { return { name: "Web Media Assistant", version: "0.1.38" }; },
+    getManifest() { return { name: "Web Media Assistant", version: "0.1.39" }; },
     getURL(file) { return "chrome-extension://test/" + file; },
     onInstalled: event("installed"),
     onMessage: event("message"),
     sendMessage(_message, callback) { if (callback) callback(); }
   },
   storage: {
-    local: storageArea(local),
+    local: storageArea(local, 25),
     sync: storageArea(sync),
     onChanged: event("storageChanged")
   },
@@ -98,11 +101,31 @@ async function dispatch(message) {
 }
 
 (async () => {
+  const media = await dispatch({ Message: "getMediaData", tabId: 1 });
+  assert.strictEqual(media.ok, true);
+  assert.strictEqual(media.items[0].url, "https://example.com/persisted.mp4");
+
   const hello = await dispatch({ cmd: "hello" });
   assert.strictEqual(hello.cmd, "hello");
   assert.ok(hello.prefs && Array.isArray(hello.prefs.sieve));
   assert.ok(hello.prefs.sieve.length > 250);
   assert.ok(hello.prefs.sieve.some(rule => rule._wmaRuleName === "GoogleImages"));
   assert.ok(!JSON.stringify(hello.prefs).includes("new Function"));
-  console.log(JSON.stringify({ messageListeners: listeners.message.length, activeSieveRules: hello.prefs.sieve.length }));
+
+  const customSource = ":\nvar value=JSON.parse($._); return value.url";
+  const saved = await dispatch({
+    cmd: "savePrefs",
+    prefs: { sieve: { CustomRule: { link: "^example\\.com/", res: customSource } } }
+  });
+  assert.strictEqual(saved.ok, true);
+  const customHello = await dispatch({ cmd: "hello" });
+  assert.strictEqual(customHello.prefs.sieve.length, 1);
+  assert.strictEqual(customHello.prefs.sieve[0]._wmaCustomRes, customSource);
+  assert.strictEqual(customHello.prefs.sieve[0].res, 1);
+  console.log(JSON.stringify({
+    messageListeners: listeners.message.length,
+    activeSieveRules: hello.prefs.sieve.length,
+    restoredMediaWaited: true,
+    customResolverAccepted: true
+  }));
 })().catch(error => { console.error(error); process.exitCode = 1; });

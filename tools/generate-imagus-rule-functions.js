@@ -17,11 +17,15 @@ const output = [
 ];
 
 const generated = [];
+function isExecutableRuleField(field, value) {
+  return typeof value === "string" && (value.startsWith(":\n") || (field === "url" && /^:\s*\S/.test(value)));
+}
+
 for (const [name, rule] of Object.entries(rules)) {
   const functions = [];
   for (const field of ["to", "url", "res"]) {
     const value = rule[field];
-    if (typeof value !== "string" || !value.startsWith(":\n")) continue;
+    if (!isExecutableRuleField(field, value)) continue;
     const body = value.slice(1);
     let source;
     if (name === "ebay" && field === "res") {
@@ -60,7 +64,7 @@ fs.writeFileSync(outputPath, output.join("\n"), "utf8");
 const runtimeRules = structuredClone(rules);
 for (const [name, rule] of Object.entries(runtimeRules)) {
   for (const field of ["to", "url", "res"]) {
-    if (typeof rule[field] === "string" && rule[field].startsWith(":\n")) {
+    if (isExecutableRuleField(field, rule[field])) {
       rule[field] = ":\n@wma-bundled:" + name + ":" + field;
     }
   }

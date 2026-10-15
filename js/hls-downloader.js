@@ -6,6 +6,7 @@
     const jobs = new Map();
     const jobStates = new Map();
     const pendingDownloads = new Map();
+    let activeOperations = 0;
     const popupPanels = new Set(["mainMenu", "playbackPanel", "shortcutsPanel", "generalPanel", "capturePanel", "imagePreviewPanel", "imagePreviewSettingsPanel", "imagePreviewShortcutsPanel", "donationPanel"]);
     let popupPanel = "mainMenu";
     let nextJobId = 1;
@@ -903,22 +904,36 @@
 
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (!message || message.__wmaTarget !== "hls-offscreen") return false;
+        if (message.__wmaInternal === "getRuntimeState") {
+            sendResponse({
+                ok: true,
+                jobs: jobs.size,
+                pendingDownloads: pendingDownloads.size,
+                activeOperations
+            });
+            return false;
+        }
         if (message.__wmaInternal === "downloadChanged") {
             const delta = message.delta || {};
             const pending = pendingDownloads.get(delta.id);
-            if (!pending || (!delta.error && (!delta.state || !["complete", "interrupted"].includes(delta.state.current)))) return false;
+            if (!pending || (!delta.error && (!delta.state || !["complete", "interrupted"].includes(delta.state.current)))) {
+                sendResponse({ ok: true, handled: false });
+                return false;
+            }
             pendingDownloads.delete(delta.id);
             URL.revokeObjectURL(pending.blobUrl);
             Promise.resolve(pending.cleanup && pending.cleanup()).catch(() => {});
-            sendResponse({ ok: true });
+            sendResponse({ ok: true, handled: true });
             return false;
         }
         if (!message.Message) return false;
         if (message.Message === "probeHls") {
             const controller = new AbortController();
+            activeOperations++;
             probeDownloadOptions(message.url, message.referer, controller.signal)
                 .then(options => sendResponse({ ok: true, variants: options }))
-                .catch(error => sendResponse({ ok: false, error: error.message || t("readM3u8Failed") }));
+                .catch(error => sendResponse({ ok: false, error: error.message || t("readM3u8Failed") }))
+                .finally(() => { activeOperations--; });
             return true;
         }
         if (message.Message === "startHlsDownload") {
